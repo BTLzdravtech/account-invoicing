@@ -23,6 +23,7 @@ class ValidateAccountMove(models.TransientModel):
 
     @api.model
     def default_get(self, fields):
+        # TODO vk: lock only for arg
         res = super().default_get(fields)
 
         if self._context.get('active_model') == 'account.move':
@@ -45,6 +46,7 @@ class ValidateAccountMove(models.TransientModel):
         self.env.ref('account_background_post.ir_cron_background_post_invoices')._trigger()
 
     def validate_move(self):
+        # TODO vk: lock for arg monkey patch
         """ Sobre escribimos este metodo por completo para hacer:
 
         1. Que en lugar de hacer un _post hacemos un _action_post. esto porque odoo hace cosas como lanzar acciones y correr validaciones solo cuando corremos el action_post. y nosotros queremos que esas se apliquen. eso incluye el envio de email cuando validamos la factura.

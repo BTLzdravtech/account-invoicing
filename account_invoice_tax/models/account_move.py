@@ -12,7 +12,6 @@ class AccountMove(models.Model):
 
     _inherit = "account.move"
 
-
     def _compute_tax_totals(self):
         """ Computed field used for custom widget's rendering.
             Only set on invoices.

@@ -9,6 +9,7 @@ from odoo.exceptions import UserError
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
+
     move_currency_id = fields.Many2one(
         'res.currency', 'Secondary Currency', readonly=True,
         help='If you set a currency here, then this invoice values will be also stored in the related Account Move Secondary Currency')

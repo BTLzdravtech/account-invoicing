@@ -78,6 +78,7 @@ class AccountMove(models.Model):
             self.commission_amount = 0.0
 
     def web_read(self, specification):
+        # TODO vk: lock for arg
         """ Esto lo agregamos para propagar el contexto del commissioned_partner_id
             La idea es que si esta presente el campo commissioned_invoice_ids agregamos en el contexto
             el commissioned_partner_id y llamamos a super de web_read pisando estos valores. """

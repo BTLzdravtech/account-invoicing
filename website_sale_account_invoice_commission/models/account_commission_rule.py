@@ -15,6 +15,7 @@ class AccountCommissionRule(models.Model):
         auto_join=True,
     )
 
+    # TODO vk: lock only for arg
     def _get_rule_domain(
             self, date, product, partner_id, customer, amount):
         domain = super()._get_rule_domain(

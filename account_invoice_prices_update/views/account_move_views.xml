@@ -6,6 +6,7 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
         <button name="button_draft" position="after">
+<!--                # TODO vk: lock only for arg-->
             <button name="%(account_invoice_prices_update.action_update_prices_list)d" 
                 string="Update Pricelist and Prices" 
                 type="action" 

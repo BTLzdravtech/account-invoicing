@@ -17,6 +17,7 @@ class AccountMove(models.Model):
 
     @api.model
     def _cron_background_post_invoices(self, batch_size=20):
+        # TODO vk: lock only for arg
         """ Busca las facturas que estan marcadas por ser validadas en background y las valida.
 
         Ponemos un batch size para mejorar la performance ya que odoo econimiza muchas queries al tener
