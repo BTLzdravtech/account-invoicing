@@ -1,17 +1,18 @@
 <?xml version="1.0"?>
 <odoo>
     <!-- CUSTOMER INVOICES -->
-    <record id="invoice_restrict_edit_form" model="ir.ui.view">
+    <record id="invoice_restrict_edit_form_ar" model="ir.ui.view">
         <field name="name">account.move.form.inherit</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="priority">30</field>
+        <field name="mode">primary</field>
         <field name="arch" type="xml">
             <form position='inside'>
                 <field name="has_sales" invisible="1"/>
                 <field name="restrict_edit_invoice" invisible="1"/>
             </form>
-<!--                # TODO vk: lock for arg, dynamicly change the fields-->
+<!--                # NOTDONETODO vk: lock for arg, dynamicly change the fields-->
             <field name="invoice_line_ids" position="attributes">
                 <attribute name="readonly">state != 'draft' or (has_sales and restrict_edit_invoice)</attribute>
            </field>

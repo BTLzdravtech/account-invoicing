@@ -24,7 +24,7 @@ class ValidateAccountMove(models.TransientModel):
     @api.model
     def default_get(self, fields):
         # DONETODO vk: lock only for arg
-        if self.company_id.country_id == self.env.ref('base.ar'):
+        if self.env.company.country_code == 'AR':
             res = super().default_get(fields)
 
             if self._context.get('active_model') == 'account.move':
@@ -50,7 +50,7 @@ class ValidateAccountMove(models.TransientModel):
 
     def validate_move(self):
         # DONETODO vk: lock for arg monkey patch
-        if self.company_id.country_id == self.env.ref('base.ar'):
+        if self.env.company.country_code == 'AR':
             """ Sobre escribimos este metodo por completo para hacer:
     
             1. Que en lugar de hacer un _post hacemos un _action_post. esto porque odoo hace cosas como lanzar acciones y correr validaciones solo cuando corremos el action_post. y nosotros queremos que esas se apliquen. eso incluye el envio de email cuando validamos la factura.
@@ -73,3 +73,10 @@ class ValidateAccountMove(models.TransientModel):
             return {'type': 'ir.actions.act_window_close'}
         else:
             return super().validate_move()
+
+
+    # @api.model
+    # def get_view(self, view_id=None, view_type="form", **options):
+    #     if view_type == "form" and self.env.company.country_code == "AR":
+    #         view_id = self.env.ref("account_background_post.validate_account_move_view_ar").id
+    #     return super().get_view(view_id=view_id, view_type=view_type, **options)

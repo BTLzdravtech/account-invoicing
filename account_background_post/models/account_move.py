@@ -40,8 +40,7 @@ class AccountMove(models.Model):
                         body_is_html=True)
             if len(moves) > batch_size:
                 self.env.ref('account_background_post.ir_cron_background_post_invoices')._trigger()
-        else:
-            super()._cron_background_post_invoices(batch_size=batch_size)
+
 
     def _post(self, soft=True):
         posted = super()._post(soft=soft)
