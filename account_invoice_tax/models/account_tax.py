@@ -14,7 +14,6 @@ class AccountTax(models.Model):
 
     _inherit = "account.tax"
 
-    # DONETODO vk: lock only for arg
     @api.model
     def _prepare_tax_totals(self, base_lines, currency, tax_lines=None, is_company_currency_requested=False):
         if self.company_id.country_id == self.env.ref('base.ar'):

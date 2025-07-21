@@ -23,7 +23,6 @@ class ValidateAccountMove(models.TransientModel):
 
     @api.model
     def default_get(self, fields):
-        # DONETODO vk: lock only for arg
         if self.env.company.country_code == 'AR':
             res = super().default_get(fields)
 
@@ -49,7 +48,6 @@ class ValidateAccountMove(models.TransientModel):
         self.env.ref('account_background_post.ir_cron_background_post_invoices')._trigger()
 
     def validate_move(self):
-        # DONETODO vk: lock for arg monkey patch
         if self.env.company.country_code == 'AR':
             """ Sobre escribimos este metodo por completo para hacer:
     

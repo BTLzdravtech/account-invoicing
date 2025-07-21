@@ -17,7 +17,6 @@ class AccountMove(models.Model):
 
     @api.model
     def _cron_background_post_invoices(self, batch_size=20):
-        # DONETODO vk: lock only for arg
         if self.company_id.country_id == self.env.ref('base.ar'):
             """ Busca las facturas que estan marcadas por ser validadas en background y las valida.
     

@@ -78,7 +78,6 @@ class AccountMove(models.Model):
             self.commission_amount = 0.0
 
     def web_read(self, specification):
-        # DONETODO vk: lock for arg
         if self.company_id.country_id == self.env.ref('base.ar'):
             """ Esto lo agregamos para propagar el contexto del commissioned_partner_id
                 La idea es que si esta presente el campo commissioned_invoice_ids agregamos en el contexto
