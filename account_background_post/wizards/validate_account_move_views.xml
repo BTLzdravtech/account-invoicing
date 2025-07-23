@@ -9,7 +9,6 @@
             <field name="arch" type="xml">
 
                 <field name="force_post" position="attributes">
-<!--                # TODO vk: lock only for arg-->
                     <attribute name="invisible">1</attribute>
                 </field>
 
@@ -19,12 +18,10 @@
                 </field>
 
                 <button name="validate_move" position="before">
-<!--                # TODO vk: lock only for arg-->
                     <button string="Post in Background" name="action_background_post" type="object" default_focus="1" class="btn-primary" data-hotkey="a" help="With this, all the invoices selected to be validated will be marked and they will be validated one by one. If an error is found when validating any invoice, the automatic validation of the same will be unmarked and it will be notified via messaging"/>
                 </button>
 
                 <button name="validate_move" position="attributes">
-<!--                # TODO vk: lock for arg logic change-->
                     <attribute name="default_focus"/>
                     <attribute name="class"/>
                     <attribute name="confirm">Only use this option to post a small batch of invoices</attribute>

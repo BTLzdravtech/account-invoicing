@@ -11,7 +11,6 @@
                 <field name="has_sales" invisible="1"/>
                 <field name="restrict_edit_invoice" invisible="1"/>
             </form>
-<!--                # TODO vk: lock for arg, dynamicly change the fields-->
             <field name="invoice_line_ids" position="attributes">
                 <attribute name="readonly">state != 'draft' or (has_sales and restrict_edit_invoice)</attribute>
            </field>
