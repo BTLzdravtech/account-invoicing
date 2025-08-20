@@ -1,6 +1,6 @@
 {
     'name': 'Account Invoice Tax',
-    'version': "17.0.1.0.0",
+    'version': "17.0.1.0.1",
     'author': 'ADHOC SA',
     'category': 'Localization',
     'depends': [
@@ -11,11 +11,12 @@
         'views/account_move_view.xml',
         'security/ir.model.access.csv',
     ],
-    'assets': {
-        'web.assets_backend': [
-            'account_invoice_tax/static/src/xml/**/*',
-        ],
-    },
+    # TODO os: replace in tax_totals must be lock only for arg
+    # 'assets': {
+    #     'web.assets_backend': [
+    #         'account_invoice_tax/static/src/xml/**/*',
+    #     ],
+    # },
     'license': 'AGPL-3',
     'installable': True,
     'auto_install': False,
