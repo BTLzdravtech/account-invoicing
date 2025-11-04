@@ -22,41 +22,47 @@ class ValidateAccountMove(models.TransientModel):
             rec.force_background = rec.count_inv > rec.batch_size
 
     def default_get(self, fields):
-        res = super().default_get(fields)
-        if res:
-            res["count_inv"] = len(res["move_ids"])
-        return res
+        if self.env.company.country_code == 'AR':
+            res = super().default_get(fields)
+            if res:
+                res["count_inv"] = len(res["move_ids"])
+            return res
+        else:
+            return super().default_get(fields)
 
     def action_background_post(self):
         self.move_ids.background_post = True
         self.env.ref("account_background_post.ir_cron_background_post_invoices")._trigger()
 
     def validate_move(self):
-        """Sobre escribimos este método para el caso de varias invoices para hacer:
+        if self.env.company.country_code == 'AR':
+            """Sobre escribimos este método para el caso de varias invoices para hacer:
+    
+            1. Que en lugar de hacer un _post hacemos un _action_post. esto porque odoo hace cosas como lanzar acciones y correr validaciones solo cuando corremos el action_post. y nosotros queremos que esas se apliquen. eso incluye el envio de email cuando validamos la factura.
+    
+            2. que se valida cada factura una a uno y no todas jutnas. esto para evitar problemas que puedan surgier
+            por errores, que no se puedan ejecutar los commits que tenemos para guardar el estado de factura electronica y tambien para asegurar que tras cada fatura se envie su email, asi si hay un error posterior las facturas que fueron validadas aseguremos que hayan sido totalmente procesadas.
+    
+            3. Limitamos sui el usuario quiere validar mas facturas que el batch size definido directamente
+            le pedimos que las valide en background."""
 
-        1. Que en lugar de hacer un _post hacemos un _action_post. esto porque odoo hace cosas como lanzar acciones y correr validaciones solo cuando corremos el action_post. y nosotros queremos que esas se apliquen. eso incluye el envio de email cuando validamos la factura.
+            if len(self) == 1:
+                return super().validate_move()
 
-        2. que se valida cada factura una a uno y no todas jutnas. esto para evitar problemas que puedan surgier
-        por errores, que no se puedan ejecutar los commits que tenemos para guardar el estado de factura electronica y tambien para asegurar que tras cada fatura se envie su email, asi si hay un error posterior las facturas que fueron validadas aseguremos que hayan sido totalmente procesadas.
-
-        3. Limitamos sui el usuario quiere validar mas facturas que el batch size definido directamente
-        le pedimos que las valide en background."""
-
-        if len(self) == 1:
-            return super().validate_move()
-
-        if self.count_inv > self.batch_size:
-            raise UserError(
-                _(
-                    "You can only validate on batches of size < %s invoices. If you need to validate"
-                    " more invoices please use the validate on background option",
-                    self.batch_size,
+            if self.count_inv > self.batch_size:
+                raise UserError(
+                    _(
+                        "You can only validate on batches of size < %s invoices. If you need to validate"
+                        " more invoices please use the validate on background option",
+                        self.batch_size,
+                    )
                 )
-            )
 
-        for move in self.move_ids:
-            _logger.info("Validating invoice %s", move.id)
-            move.action_post()
-            move._cr.commit()
+            for move in self.move_ids:
+                _logger.info("Validating invoice %s", move.id)
+                move.action_post()
+                move._cr.commit()
 
-        return {"type": "ir.actions.act_window_close"}
+            return {"type": "ir.actions.act_window_close"}
+        else:
+            return super().validate_move()
