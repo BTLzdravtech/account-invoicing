@@ -41,6 +41,7 @@ class AccountMove(models.Model):
     )
     # este campo lo agregamos aca y no en account_usability para no perjudicar
     # a quien no usa comisiones en temas de performance
+    # TODO: Odoo BTL - might kill the deployment, because of the computation over 1 million records
     date_last_payment = fields.Date(
         compute="_compute_date_last_payment",
         string="Last Payment Date",
