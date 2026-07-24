@@ -41,21 +41,27 @@ class ValidateAccountMove(models.TransientModel):
 
         3. Limitamos sui el usuario quiere validar mas facturas que el batch size definido directamente
         le pedimos que las valide en background."""
-        if self.count_inv <= 1:  # or 0 or 1
+        if self.count_inv:
+            if self.count_inv > self.batch_size:
+                raise UserError(
+                    _(
+                        "You can only validate on batches of size < %s invoices. If you need to validate"
+                        " more invoices please use the validate on background option",
+                        self.batch_size,
+                    )
+                )
+
+            for move in self.move_ids:
+                _logger.info("Validating invoice %s", move.id)
+                move.action_post()
+                move._cr.commit()
+
+            return {"type": "ir.actions.act_window_close"}
+        else:
             return super().validate_move()
 
-        if self.count_inv > self.batch_size:
-            raise UserError(
-                _(
-                    "You can only validate on batches of size < %s invoices. If you need to validate"
-                    " more invoices please use the validate on background option",
-                    self.batch_size,
-                )
-            )
-
-        for move in self.move_ids:
-            _logger.info("Validating invoice %s", move.id)
-            move.action_post()
-            move._cr.commit()
-
-        return {"type": "ir.actions.act_window_close"}
+    def validate_move_confirm(self):
+        """Bridge method called from the view's Confirm button renamed to
+        avoid name collision. It delegates to `validate_move` to keep the
+        same behaviour."""
+        return self.validate_move()

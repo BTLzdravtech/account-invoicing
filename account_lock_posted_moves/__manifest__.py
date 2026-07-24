@@ -1,6 +1,6 @@
 ##############################################################################
 #
-#    Copyright (C) 2015  ADHOC SA  (http://www.adhoc.com.ar)
+#    Copyright (C) 2026  ADHOC SA  (http://www.adhoc.com.ar)
 #    All Rights Reserved.
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -18,26 +18,19 @@
 #
 ##############################################################################
 {
-    "name": "Commission Invoices",
-    "version": "18.0.1.5.0",
-    "category": "Accounting",
-    "sequence": 14,
-    "summary": "",
+    "name": "Account Lock Posted Moves",
     "author": "ADHOC SA",
-    "website": "www.adhoc.com.ar",
+    "version": "18.0.1.0.0",
     "license": "AGPL-3",
-    "images": [],
+    "category": "Accounting & Finance",
+    "summary": "Flexible lock system for posted entries (replaces hash locking)",
     "depends": [
         "account",
     ],
     "data": [
-        "views/account_move_view.xml",
-        "views/account_commission_rule_view.xml",
-        "security/ir.model.access.csv",
+        "views/account_journal_views.xml",
     ],
-    "demo": [],
-    "test": [],
+    "website": "www.adhoc.com.ar",
     "installable": True,
-    "auto_install": False,
-    "application": False,
+    "post_init_hook": "post_init_hook",
 }

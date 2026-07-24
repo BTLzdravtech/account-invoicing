@@ -7,7 +7,7 @@ from odoo import fields, models
 
 class AccountCommissionRule(models.Model):
     _name = "account.commission.rule"
-    _order = "sequence"
+    _order = "sequence asc, id desc"
     _description = "Account Commission Rule"
 
     sequence = fields.Integer(
@@ -39,7 +39,7 @@ class AccountCommissionRule(models.Model):
         "Product Template",
         auto_join=True,
         ondelete="cascade",
-        help="Specify a template if this rule only applies to one product " "template. Keep empty otherwise.",
+        help="Specify a template if this rule only applies to one product template. Keep empty otherwise.",
     )
     categ_id = fields.Many2one(
         "product.category",
@@ -51,12 +51,18 @@ class AccountCommissionRule(models.Model):
         "Keep empty otherwise.",
     )
     min_amount = fields.Float(
-        help="Minimun Amount on company currency of the invoice to be " "evaluated",
+        help="Minimun Amount on company currency of the invoice to be evaluated",
         default=0.0,
     )
     percent_commission = fields.Float("Percentage Commission")
+    account_id = fields.Many2one(
+        "account.account",
+        "Commission Account",
+        help="Specify an account if this rule only applies to commission "
+        "lines with this account. Keep empty to apply to all accounts.",
+    )
 
-    def _get_rule_domain(self, date, product, partner_id, customer, amount):
+    def _get_rule_domain(self, date, product, partner_id, customer, amount, account_id=False):
         domain = [
             "|",
             ("date_start", "=", False),
@@ -70,6 +76,8 @@ class AccountCommissionRule(models.Model):
             ("partner_id", "in", [False, partner_id]),
             ("customer_id", "in", [False, customer.id]),
         ]
+        if account_id:
+            domain += [("account_id", "in", [False, account_id])]
         # para lineas sin producto buscamos solamente las de false
         if not product:
             domain += [("product_tmpl_id", "=", False), ("categ_id", "=", False)]
@@ -82,6 +90,6 @@ class AccountCommissionRule(models.Model):
             ]
         return domain
 
-    def _get_rule(self, date, product, partner_id, customer, amount):
-        domain = self._get_rule_domain(date, product, partner_id, customer, amount)
+    def _get_rule(self, date, product, partner_id, customer, amount, account_id=False):
+        domain = self._get_rule_domain(date, product, partner_id, customer, amount, account_id)
         return self.search(domain, limit=1)
