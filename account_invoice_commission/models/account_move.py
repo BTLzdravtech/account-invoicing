@@ -57,13 +57,14 @@ class AccountMove(models.Model):
             users = rec.partner_id.user_ids
             rec.partner_user_id = users and users[0] or False
 
-    # dependemos de amount_residual que depende de line_ids.amount_residual porque no hay ningun campo almacenado que
-    # vaya derecho contra las lineas de pago, toda esa logica ya la tiene implementada el campo
+    # amount_residual already tracks payment reconciliation changes.
     @api.depends("amount_residual")
     def _compute_date_last_payment(self):
-        for rec in self.filtered(lambda x: x.move_type != "entry" and x.state == "posted"):
-            payments = rec._get_reconciled_payments()
-            rec.date_last_payment = payments and payments[-1].date
+        for rec in self:
+            rec.date_last_payment = False
+            if rec.move_type != "entry" and rec.state == "posted":
+                payments = rec._get_reconciled_payments()
+                rec.date_last_payment = payments and payments[-1].date
 
     @api.depends("invoice_line_ids.commission_amount")
     @api.depends_context("commissioned_partner_id")
@@ -77,31 +78,33 @@ class AccountMove(models.Model):
             self.commission_amount = 0.0
 
     def web_read(self, specification):
-        """Esto lo agregamos para propagar el contexto del commissioned_partner_id
-        La idea es que si esta presente el campo commissioned_invoice_ids agregamos en el contexto
-        el commissioned_partner_id y llamamos a super de web_read pisando estos valores."""
+        """Propagate the commissioned partner through nested reads."""
         res = super().web_read(specification)
         for vals, rec in zip(res, self):
             partner_id = vals.get("partner_id")
             if (
-                partner_id
+                rec.country_code == "AR"
+                and partner_id
                 and isinstance(partner_id, dict)
                 and partner_id.get("id")
                 and "commissioned_invoice_ids" in specification
             ):
                 vals["commissioned_invoice_ids"] = (
-                    super(AccountMove, rec)
-                    .with_context(commissioned_partner_id=vals["partner_id"]["id"])
-                    .web_read({"commissioned_invoice_ids": specification["commissioned_invoice_ids"]})[0][
+                    super(
+                        AccountMove,
+                        rec.with_context(commissioned_partner_id=vals["partner_id"]["id"]),
+                    ).web_read({"commissioned_invoice_ids": specification["commissioned_invoice_ids"]})[0][
                         "commissioned_invoice_ids"
                     ]
                 )
         return res
 
     def _fetch_duplicate_reference(self, matching_states=("draft", "posted")):
-        # Delete this when https://github.com/odoo/odoo/pull/210164 is merged
-        # Bypass the duplicate payment check for main payments
-        bypass_moves_with_commission = self.filtered(lambda x: x.commissioned_invoice_ids or x.commission_invoice_ids)
-        if bypass_moves_with_commission:
-            return {}
-        return super()._fetch_duplicate_reference(matching_states=matching_states)
+        duplicates = super()._fetch_duplicate_reference(matching_states=matching_states)
+        bypass_moves = self.filtered(
+            lambda move: move.country_code == "AR"
+            and (move.commissioned_invoice_ids or move.commission_invoice_ids)
+        )
+        for move in bypass_moves:
+            duplicates[move] = self.env["account.move"]
+        return duplicates

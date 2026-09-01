@@ -13,30 +13,10 @@ class AccountMove(models.Model):
     tax_override_data = fields.Json()
 
     def sync_tax_override_from_tax_totals(self):
-        """Rebuild ``tax_override_data`` from the current ``tax_totals`` widget value.
-
-        Iterates every tax group in ``tax_totals`` and, for each fixed-amount
-        tax found, stores the displayed amounts as an override so they survive
-        future recomputations.
-
-        ``tax_totals`` structure (relevant fields)::
-
-            {
-                "subtotals": [{
-                    "tax_groups": [{
-                        "involved_tax_ids": [<tax_id>, ...],
-                        "tax_amount":          <float>,   # company currency
-                    }, ...]
-                }, ...]
-            }
-
-        ``amount`` (invoice-currency) → ``tax_amount_currency`` when the
-        invoice is in a foreign currency, otherwise ``tax_amount``.
-        ``amount_company_currency`` → ``tax_amount`` (always company currency),
-        or 0.0 when the invoice is in company currency (field unused in that
-        case, see ``_apply_tax_overrides``).
-        """
-        for rec in self.filtered(lambda m: m.move_type in ("in_invoice", "in_refund", "in_receipt")):
+        for rec in self.filtered(
+            lambda move: move.country_code == "AR"
+            and move.move_type in ("in_invoice", "in_refund", "in_receipt")
+        ):
             tax_totals = rec.tax_totals
             if not tax_totals:
                 continue
@@ -76,20 +56,21 @@ class AccountMove(models.Model):
     def _compute_tax_totals(self):
         for move in self:
             overrides = move.tax_override_data or {}
-            if not overrides:
+            if move.country_code != "AR" or not overrides:
                 super(AccountMove, move)._compute_tax_totals()
                 continue
 
             tax_context = {
                 "tax_context": {
                     int(tax_id): {
-                        "fixed_amount": (vals["amount"]),
-                        "rate": (move.invoice_currency_rate or 1.0),
+                        "fixed_amount": vals["amount"],
+                        "rate": move.invoice_currency_rate or 1.0,
                     }
                     for tax_id, vals in overrides.items()
                 },
             }
             super(AccountMove, move.with_context(**tax_context))._compute_tax_totals()
+            move.tax_totals["account_invoice_tax_readonly"] = True
 
     # ------------------------------------------------------------------
     # Re-apply overrides after every tax-line recomputation so that the
@@ -99,23 +80,12 @@ class AccountMove(models.Model):
 
     @contextmanager
     def _sync_tax_lines(self, container):
-        """Restore manually-set tax amounts after the core recomputes tax lines.
+        records = container.get("records", self).filtered(lambda move: move.country_code == "AR")
+        if not records:
+            with super()._sync_tax_lines(container):
+                yield
+            return
 
-        Also fixes a core Odoo ordering issue: within ``_sync_dynamic_lines``
-        the ``ExitStack`` unwinds in LIFO order, so ``line._sync_invoice``
-        exits *before* ``_sync_tax_lines``.  When the invoice date changes on
-        a foreign-currency invoice, ``line._sync_invoice`` rewrites the
-        ``balance`` of every line (including tax lines) for the new exchange
-        rate.  ``_sync_tax_lines`` then sees those touched balances and
-        concludes that the tax amounts were manually edited
-        (``round_from_tax_lines = True``), so it preserves the old totals
-        even though a base line was deleted at the same time.
-
-        We detect that scenario here and force a full recompute from base
-        lines so that the amounts correctly reflect only the remaining lines.
-        """
-        # Capture state before the main yield so we can detect the scenario.
-        records = container.get("records", self)
         _before_state = {
             move: {
                 "rate": move.invoice_currency_rate,
@@ -131,10 +101,7 @@ class AccountMove(models.Model):
             yield
 
         AccountTax = self.env["account.tax"]
-        for move in container.get("records", self):
-            # Fix: when the invoice currency rate changed at the same time as a
-            # taxed base line was deleted, the core may have preserved the stale
-            # tax totals.  Re-run the computation from base lines in that case.
+        for move in records:
             if move.state == "draft" and move.id:
                 before = _before_state.get(move)
                 if before and before["rate"] != move.invoice_currency_rate:
