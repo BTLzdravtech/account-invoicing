@@ -62,7 +62,6 @@ class ValidateAccountMove(models.TransientModel):
         for move in background_moves:
             _logger.info("Validating invoice %s", move.id)
             move.action_post()
-            move.env.cr.commit()
         return {"type": "ir.actions.act_window_close"}
 
     def validate_move_confirm(self):
