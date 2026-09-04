@@ -89,21 +89,18 @@ class AccountMove(models.Model):
                 and partner_id.get("id")
                 and "commissioned_invoice_ids" in specification
             ):
-                vals["commissioned_invoice_ids"] = (
-                    super(
-                        AccountMove,
-                        rec.with_context(commissioned_partner_id=vals["partner_id"]["id"]),
-                    ).web_read({"commissioned_invoice_ids": specification["commissioned_invoice_ids"]})[0][
-                        "commissioned_invoice_ids"
-                    ]
-                )
+                vals["commissioned_invoice_ids"] = super(
+                    AccountMove,
+                    rec.with_context(commissioned_partner_id=vals["partner_id"]["id"]),
+                ).web_read(
+                    {"commissioned_invoice_ids": specification["commissioned_invoice_ids"]}
+                )[0]["commissioned_invoice_ids"]
         return res
 
     def _fetch_duplicate_reference(self, matching_states=("draft", "posted")):
         duplicates = super()._fetch_duplicate_reference(matching_states=matching_states)
         bypass_moves = self.filtered(
-            lambda move: move.country_code == "AR"
-            and (move.commissioned_invoice_ids or move.commission_invoice_ids)
+            lambda move: move.country_code == "AR" and (move.commissioned_invoice_ids or move.commission_invoice_ids)
         )
         for move in bypass_moves:
             duplicates[move] = self.env["account.move"]

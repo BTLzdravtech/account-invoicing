@@ -14,8 +14,7 @@ class AccountMove(models.Model):
 
     def sync_tax_override_from_tax_totals(self):
         for rec in self.filtered(
-            lambda move: move.country_code == "AR"
-            and move.move_type in ("in_invoice", "in_refund", "in_receipt")
+            lambda move: move.country_code == "AR" and move.move_type in ("in_invoice", "in_refund", "in_receipt")
         ):
             tax_totals = rec.tax_totals
             if not tax_totals:

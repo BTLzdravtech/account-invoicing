@@ -15,7 +15,9 @@ class ValidateAccountMove(models.TransientModel):
     use_background_post = fields.Boolean(compute="_compute_use_background_post")
 
     def _compute_batch_size(self):
-        self.batch_size = int(self.env["ir.config_parameter"].sudo().get_param("account_background_post.batch_size", 20))
+        self.batch_size = int(
+            self.env["ir.config_parameter"].sudo().get_param("account_background_post.batch_size", 20)
+        )
 
     def _compute_force_background(self):
         for rec in self:
@@ -24,8 +26,7 @@ class ValidateAccountMove(models.TransientModel):
     def _compute_use_background_post(self):
         for rec in self:
             rec.use_background_post = bool(rec.move_ids) and all(
-                move.country_code == "AR" and move.move_type in ("out_invoice", "out_refund")
-                for move in rec.move_ids
+                move.country_code == "AR" and move.move_type in ("out_invoice", "out_refund") for move in rec.move_ids
             )
 
     def default_get(self, fields):
