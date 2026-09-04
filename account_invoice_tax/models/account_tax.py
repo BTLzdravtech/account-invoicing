@@ -7,9 +7,8 @@ class AccountTax(models.Model):
     @api.model
     def _get_tax_totals_summary(self, base_lines, currency, company, cash_rounding=None):
         res = super()._get_tax_totals_summary(base_lines, currency, company, cash_rounding=cash_rounding)
-        # ``tax_context`` is injected by AccountMove._compute_tax_totals when
-        # there are active tax overrides.  Structure:
-        #   { tax_id (int): {'fixed_amount': float, 'rate': float}, ... }
+        if company.account_fiscal_country_id.code != "AR":
+            return res
         if tax_context := self.env.context.get("tax_context"):
             original_amount_by_tax_id = {}
             original_amount_currency_by_tax_id = {}

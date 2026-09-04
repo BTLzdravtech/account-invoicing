@@ -19,7 +19,7 @@
 ##############################################################################
 {
     "name": "Account Invoice Prices Update",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "author": "ADHOC SA",
     "license": "AGPL-3",
     "category": "Accounting & Finance",
@@ -31,4 +31,5 @@
         "security/ir.model.access.csv",
     ],
     "installable": True,
+    "auto_install": False,
 }
