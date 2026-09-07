@@ -26,7 +26,7 @@ class AccountInvoiceTax(models.TransientModel):
         elif move_ids[0].move_type == "in_refund":
             sign = -1
         else:
-            raise UserError("Este asistente solo puede usarse sobre facturas o notas de crédito de compra.")
+            raise UserError(_("This wizard can only be used on vendor bills or refunds."))
         lines = []
         for line in move_ids[0].line_ids.filtered(lambda x: x.tax_line_id):
             lines.append(
@@ -100,8 +100,10 @@ class AccountInvoiceTax(models.TransientModel):
         taxes = self.tax_line_ids.filtered("tax_id.analytic").mapped("tax_id")
         if taxes:
             raise UserError(
-                'No puede usar este asistente ya que algún impuesto tiene establecido "Incluir en el costo analítico?".\nImpuestos: %s'
-                % (", ".join(taxes.mapped(lambda x: "%s (%s)" % (x.name, x.id))))
+                _(
+                    'You cannot use this wizard because a tax has "Include in Analytic Cost?" enabled.\nTaxes: %s',
+                    ", ".join(taxes.mapped(lambda tax: "%s (%s)" % (tax.name, tax.id))),
+                )
             )
 
 
