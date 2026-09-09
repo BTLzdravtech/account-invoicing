@@ -22,11 +22,21 @@ class AccountMove(models.Model):
 
     @api.model
     def _cron_background_post_invoices(self, ids=None):
-        """Busca las facturas que estan marcadas por ser validadas en background y las valida."""
+        """Post invoices queued for background processing."""
         if ids is not None:
             moves = self.browse(ids)
         else:
-            moves = self.search([("background_post", "=", True), ("state", "=", "draft")])
+            moves = self.search(
+                [
+                    ("background_post", "=", True),
+                    ("state", "=", "draft"),
+                    ("country_code", "=", "AR"),
+                    ("move_type", "in", ("out_invoice", "out_refund")),
+                ]
+            )
+        moves = moves.filtered(
+            lambda move: move.country_code == "AR" and move.move_type in ("out_invoice", "out_refund")
+        )
 
         total_len = len(moves)
         self.env["ir.cron"]._commit_progress(remaining=total_len)
@@ -49,22 +59,12 @@ class AccountMove(models.Model):
                 self.env.cr.commit()  # pylint: disable=invalid-commit
 
     def _post(self, soft=True):
-        """Difiere el posteo de documentos de venta (facturas y notas de crédito) a background,
-        para no bloquear el flujo sincrónico por validaciones externas lentas (ej. ARCA).
-
-        Si el contexto trae `force_background_post`, saltea el `super()._post()` para facturas
-        de cliente y notas de crédito/débito de venta (`out_invoice`, `out_refund`); el resto
-        de los moves postea normalmente."""
         to_defer = self.env["account.move"]
         if self.env.context.get("force_background_post"):
-            to_defer = self.filtered(lambda m: m.move_type in ("out_invoice", "out_refund"))
-            to_defer.write({"background_post": True})
+            to_defer = self.filtered(
+                lambda move: move.country_code == "AR" and move.move_type in ("out_invoice", "out_refund")
+            )
+            to_defer.background_post = True
         posted = super(AccountMove, self - to_defer)._post(soft=soft)
         posted.filtered("background_post").background_post = False
         return posted
-
-    def _get_moves_requiring_confirmation(self):
-        """Override method to always open the confirmation wizard
-        when trying to set a background_post invoice.
-        """
-        return self
