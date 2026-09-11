@@ -12,55 +12,58 @@ class ValidateAccountMove(models.TransientModel):
     count_inv = fields.Integer(help="Technical field to know the number of invoices selected from the wizard")
     batch_size = fields.Integer(compute="_compute_batch_size")
     force_background = fields.Integer(compute="_compute_force_background")
+    use_background_post = fields.Boolean(compute="_compute_use_background_post")
 
     def _compute_batch_size(self):
-        self.batch_size = self.env["ir.config_parameter"].sudo().get_param("account_background_post.batch_size", 20)
+        self.batch_size = int(
+            self.env["ir.config_parameter"].sudo().get_param("account_background_post.batch_size", 20)
+        )
 
     def _compute_force_background(self):
         for rec in self:
             rec.force_background = rec.count_inv > rec.batch_size
 
+    def _compute_use_background_post(self):
+        for rec in self:
+            rec.use_background_post = bool(rec.move_ids) and all(
+                move.country_code == "AR" and move.move_type in ("out_invoice", "out_refund") for move in rec.move_ids
+            )
+
     def default_get(self, fields):
         res = super().default_get(fields)
-        if res:
-            res["count_inv"] = len(res["move_ids"][0][2])
+        move_ids = res.get("move_ids", [])
+        if move_ids and move_ids[0][0] == 6:
+            res["count_inv"] = len(move_ids[0][2])
         return res
 
     def action_background_post(self):
-        self.move_ids.filtered(lambda m: m.state == "draft").background_post = True
-        self.env.ref("account_background_post.ir_cron_background_post_invoices")._trigger()
+        moves = self.move_ids.filtered(
+            lambda move: move.state == "draft"
+            and move.country_code == "AR"
+            and move.move_type in ("out_invoice", "out_refund")
+        )
+        moves.background_post = True
+        if moves:
+            self.env.ref("account_background_post.ir_cron_background_post_invoices")._trigger()
+        return {"type": "ir.actions.act_window_close"}
 
     def validate_move(self):
-        """Sobre escribimos este método para el caso de varias invoices para hacer:
-
-        1. Que en lugar de hacer un _post hacemos un _action_post. esto porque odoo hace cosas como lanzar acciones y correr validaciones solo cuando corremos el action_post. y nosotros queremos que esas se apliquen. eso incluye el envio de email cuando validamos la factura.
-
-        2. que se valida cada factura una a uno y no todas jutnas. esto para evitar problemas que puedan surgier
-        por errores, que no se puedan ejecutar los commits que tenemos para guardar el estado de factura electronica y tambien para asegurar que tras cada fatura se envie su email, asi si hay un error posterior las facturas que fueron validadas aseguremos que hayan sido totalmente procesadas.
-
-        3. Limitamos sui el usuario quiere validar mas facturas que el batch size definido directamente
-        le pedimos que las valide en background."""
-        if self.count_inv:
-            if self.count_inv > self.batch_size:
-                raise UserError(
-                    _(
-                        "You can only validate on batches of size < %s invoices. If you need to validate"
-                        " more invoices please use the validate on background option",
-                        self.batch_size,
-                    )
-                )
-
-            for move in self.move_ids:
-                _logger.info("Validating invoice %s", move.id)
-                move.action_post()
-                move.env.cr.commit()
-
-            return {"type": "ir.actions.act_window_close"}
-        else:
+        background_moves = self.move_ids.filtered(
+            lambda move: move.country_code == "AR" and move.move_type in ("out_invoice", "out_refund")
+        )
+        if self.move_ids - background_moves:
             return super().validate_move()
+        if background_moves and len(background_moves) > self.batch_size:
+            raise UserError(
+                _(
+                    "You can only validate batches smaller than %s invoices. Use background posting for larger batches.",
+                    self.batch_size,
+                )
+            )
+        for move in background_moves:
+            _logger.info("Validating invoice %s", move.id)
+            move.action_post()
+        return {"type": "ir.actions.act_window_close"}
 
     def validate_move_confirm(self):
-        """Bridge method called from the view's Confirm button renamed to
-        avoid name collision. It delegates to `validate_move` to keep the
-        same behaviour."""
         return self.validate_move()

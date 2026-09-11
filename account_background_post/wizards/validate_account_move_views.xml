@@ -8,25 +8,26 @@
             <field name="arch" type="xml">
 
                 <field name="force_post" position="attributes">
-                    <attribute name="invisible">1</attribute>
+                    <attribute name="invisible">use_background_post</attribute>
                 </field>
 
                 <field name="force_post" position="after">
                     <field name="count_inv" invisible="1"/>
                     <field name="force_background" invisible="1"/>
+                    <field name="use_background_post" invisible="1"/>
                 </field>
 
                 <button name="validate_move" position="before">
-                    <button string="Post in Background" name="action_background_post" type="object" default_focus="1" class="btn-primary" data-hotkey="a" help="With this, all the invoices selected to be validated will be marked and they will be validated one by one. If an error is found when validating any invoice, the automatic validation of the same will be unmarked and it will be notified via messaging"
-                    invisible="abnormal_amount_partner_ids or abnormal_date_partner_ids"/>
+                    <button string="Post in Background" name="action_background_post" type="object" default_focus="1" class="btn-primary" data-hotkey="a"
+                    invisible="not use_background_post or abnormal_amount_partner_ids or abnormal_date_partner_ids"/>
                     <button string="Confirm Now" name="validate_move_confirm" type="object"
                     default_focus="1" class="btn-primary" data-hotkey="q" context="{'validate_analytic': True}"
-                    confirm="Only use this option to post a small batch of invoices" invisible="force_background"
-                    />
+                    confirm="Only use this option to post a small batch of invoices"
+                    invisible="not use_background_post or force_background"/>
                 </button>
 
                 <button name="validate_move" position="attributes">
-                    <attribute name="invisible">1</attribute>
+                    <attribute name="invisible">use_background_post</attribute>
                 </button>
 
             </field>

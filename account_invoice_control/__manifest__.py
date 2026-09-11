@@ -20,7 +20,7 @@
 {
     "name": "Account Invoice Control",
     "author": "ADHOC SA",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "license": "AGPL-3",
     "category": "Accounting & Finance",
     "depends": ["sale", "account"],
@@ -30,4 +30,5 @@
     ],
     "website": "www.adhoc.com.ar",
     "installable": True,
+    "auto_install": False,
 }
