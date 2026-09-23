@@ -10,3 +10,4 @@ def migrate(cr, version):
         env.add_to_compute(moves._fields["date_last_payment"], moves)
         moves._recompute_recordset(["date_last_payment"])
         last_id = moves[-1].id
+        env.invalidate_all()
